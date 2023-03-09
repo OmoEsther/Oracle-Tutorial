@@ -287,6 +287,8 @@ Recall this is our plug and play function, so for the consumer contract to be ab
 - receive the input of the request result and check if that requestId exists in the mappings else revert
 - then it updates the status of the request and stores the result.
 
+It is marked as internal, as the only entry allowed is from the `rawCompleteRequest` function, which only the off-chain oracle address can call. Can you see the picture now?
+
 Lastly the `viewRequest` function
 
 ```solidity
@@ -356,3 +358,11 @@ contract Consumer is OnChainOracle {
 }
 
 ```
+
+### Compiling and Deploying the Consumer Contract
+
+Now let's compile and deploy the `Consumer.sol` contract. For the constructor parameter (the off-chain oracle service) use a wallet address that you have the private key to and has enough celo tokens to pay for gas.
+
+![deploying contract](assets/deploy%20contract.gif)
+
+## Off-chain Oracle Service
