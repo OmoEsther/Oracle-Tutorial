@@ -645,7 +645,10 @@ And Voila you have a full working oracle.
 
 ## Conclusion
 
-In this tutorial, you have learned about how to use oracles to query off-chain data and pass it into a consumer smart contract hosted on the blockchain. Do note that this is a simple example of much more complex oracle designs systems in use now as they include many nodes and consensus protocols to ensure that the oracle data is decentralized.
+In this tutorial, you have learned about how to use oracles to query off-chain data and pass it into a consumer smart contract hosted on the blockchain. 
+
+Do note that this is a simple example of much more complex oracle designs systems in use now as they include many nodes and consensus protocols to ensure that the oracle data is decentralized.
+
 To see all on-chain Oracles currently present on CELO follow [here](https://docs.celo.org/protocol/oracle).
 
 
