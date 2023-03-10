@@ -14,7 +14,7 @@
       - [Compiling and Deploying the Consumer Contract](#compiling-and-deploying-the-consumer-contract)
     - [Off-Chain Oracle Service](#off-chain-oracle-service)
       - [Setting up a Local Repository](#setting-up-a-local-repository)
-      - [Writing On-Chain Oracle](#writing-on-chain-oracle)
+      - [Writing Off-Chain Oracle](#writing-off-chain-oracle)
       - [Testing Oracle](#testing-oracle)
   - [Conclusion](#conclusion)
 
@@ -465,7 +465,7 @@ Lastly in the root of the folder, create a file `index.js` this is where the ora
 
 And that's it for the setup.
 
-#### Writing On-Chain Oracle
+#### Writing Off-Chain Oracle
 
 Let's open the `index.js` file and import all the necessary dependencies needed to run our off-chain oracle.
 
