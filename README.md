@@ -57,7 +57,8 @@ To get started, hop on to remix and create a file `OnChainOracle.sol` and open i
 Now let's define the structure of the contract. The contract will contain the following:
 
 - the address of the off-chain oracle (this should be immutable)
-- a constructor that helps us set the off-chain oracle address
+- the fee required to make the request.
+- a constructor that helps us set the off-chain oracle address and the fee.
 - an event that triggers the off-chain oracle
 - a function the consumer contract calls to make the weather request
 - a function the off-chain oracle calls to supply us with the weather result.
@@ -74,10 +75,13 @@ abstract contract OnChainOracle{
 
     address private immutable offChainOracleAddress;
 
+    uint256 private immutable fee;
+
     event newRequest(uint256 requestId, int256 lat, int256 lon);
 
-    constructor(address _offChainOracleAddress) {
+    constructor(address _offChainOracleAddress, uint256 _fee) {
         offChainOracleAddress = _offChainOracleAddress;
+        fee = _fee;
     }
 
     //function makeWeatherRequest(){}
@@ -100,6 +104,8 @@ let's define the `makeWeatherRequest` function;
         uint256 _lat,
         uint256 _lon
     ) internal returns (uint256) {
+        (bool sent, ) = payable(offChainOracleAddress).call{value: fee}("");
+        require(sent, "Failed to send Fee");
         uint256 requestId = uint(
             keccak256(abi.encodePacked(block.timestamp, msg.sender, nonce))
         );
@@ -112,6 +118,7 @@ let's define the `makeWeatherRequest` function;
 Breakdown of the function
 
 - It takes in two parameters from the caller, the latitude and the longitude as ints so it can support negative inputs from the caller, as the range for latitudes is -90 to 90 and -180 to 180 for longitudes
+- Next we send the fee to the on chain oracle address so it doesn't run of funds to pay for gas.
 - Next it generates a unique request Id, so the off-chain can be able to keep track of different requests. It uses a combination of the timestamp, caller address and the contract's nonce to generate this id. This ID is returned after the function is completed.
 - Lastly it emits the trigger event so the off-chain oracle can get notified of a new requests, it sends the requestId along with the latitude and longitude. Then it increments the nonce.
 
@@ -145,20 +152,25 @@ The onChain-oracle contract now looks like this;
 pragma solidity ^0.8.0;
 
 abstract contract OnChainOracle {
-    uint256 private nonce;
+     uint256 private nonce;
 
     address private immutable offChainOracleAddress;
 
+    uint256 private immutable fee;
+
     event newRequest(uint256 requestId, int256 lat, int256 log);
 
-    constructor(address _offChainOracleAddress) {
+    constructor(address _offChainOracleAddress, uint256 _fee) {
         offChainOracleAddress = _offChainOracleAddress;
+        fee = _fee;
     }
 
     function makeWeatherRequest(
         int256 _lat,
         int256 _lon
     ) internal returns (uint256) {
+        (bool sent, ) = payable(offChainOracleAddress).call{value: fee}("");
+        require(sent, "Failed to send Fee");
         uint256 requestId = uint(
             keccak256(abi.encodePacked(block.timestamp, msg.sender, nonce))
         );
@@ -208,9 +220,10 @@ contract Consumer is OnChainOracle { }
 Okay!!!. Let's define the contract's structure: The contract will contain the following:
 
 - a counter to keep track with the number of requests
+- the fee required to make the request
 - a struct containing the request information and status of the request
 - mappings that help keep track of the requestIds to the requestData and their id in the counter.
-- a `constructor` that sets the offChainOracleAddress.
+- a `constructor` that sets the offChainOracleAddress and the fee.
 - the `getWeather` function that makes the call
 - the `completeRequest` function that helps us store the request result.
 - the `viewRequest` function that helps us output the request data.
@@ -222,7 +235,9 @@ pragma solidity ^0.8.0;
 import "./OnChainOracle.sol";
 
 contract Consumer is OnChainOracle {
-    uint256 count;
+    uint256 public count;
+
+    uint256 public fee;
 
     struct weatherRequest {
         int256 lat;
@@ -235,7 +250,12 @@ contract Consumer is OnChainOracle {
 
     mapping(uint256 => uint256) ids;
 
-    constructor(address _offChainOracle) OnChainOracle(_offChainOracle) {}
+    constructor(
+        address _offChainOracle,
+        uint256 _fee
+    ) OnChainOracle(_offChainOracle, _fee) {
+        fee = _fee;
+    }
 
     // function getWeather()  {}
 
@@ -249,7 +269,8 @@ contract Consumer is OnChainOracle {
 Let's define the `getWeather` function
 
 ```solidity
-    function getWeather(int256 _lat, int256 _lon) external {
+    function getWeather(int256 _lat, int256 _lon) external payable {
+        require(msg.value >= fee, "not enough fee for request");
         uint256 requestId = makeWeatherRequest(_lat, _lon);
         weatherRequests[requestId] = weatherRequest({
             lat: _lat,
@@ -264,10 +285,11 @@ Let's define the `getWeather` function
 
 Breakdown of the function
 
-- The function takes in the latitude and longitude from the user
-- Then it makes the requests and creates a new weatherRequest object using the returned requestId as the key.
-- It also stores a mapping of the counter to the requestId, for ease of retrievable as we can't memorize the generated requestId from the on chain oracle
-- Then it increments the counter
+- the function takes in the latitude and longitude from the user
+- next it checks if the user attached enough fee to make the request
+- then it makes the requests and creates a new weatherRequest object using the returned requestId as the key.
+- it also stores a mapping of the counter to the requestId, for ease of retrievable as we can't memorize the generated requestId from the on chain oracle
+- then it increments the counter
 
 Next the `completeRequest` function
 
@@ -312,7 +334,9 @@ pragma solidity ^0.8.0;
 import "./OnChainOracle.sol";
 
 contract Consumer is OnChainOracle {
-    uint256 count;
+     uint256 public count;
+
+    uint256 public fee;
 
     struct weatherRequest {
         int256 lat;
@@ -325,9 +349,15 @@ contract Consumer is OnChainOracle {
 
     mapping(uint256 => uint256) ids;
 
-    constructor(address _offChainOracle) OnChainOracle(_offChainOracle) {}
+    constructor(
+        address _offChainOracle,
+        uint256 _fee
+    ) OnChainOracle(_offChainOracle, _fee) {
+        fee = _fee;
+    }
 
-    function getWeather(int256 _lat, int256 _lon) external {
+    function getWeather(int256 _lat, int256 _lon) external payable {
+        require(msg.value >= fee, "not enough fee for request");
         uint256 requestId = makeWeatherRequest(_lat, _lon);
         weatherRequests[requestId] = weatherRequest({
             lat: _lat,
@@ -361,8 +391,52 @@ contract Consumer is OnChainOracle {
 
 ### Compiling and Deploying the Consumer Contract
 
-Now let's compile and deploy the `Consumer.sol` contract. For the constructor parameter (the off-chain oracle service) use a wallet address that you have the private key to and has enough celo tokens to pay for gas.
-
+Now let's compile and deploy the `Consumer.sol` contract. For the constructor parameter (the off-chain oracle service) use a wallet address that you have the private key.
 ![deploying contract](assets/deploy%20contract.gif)
 
 ## Off-chain Oracle Service
+
+In this section we're going to create the JavaScript component of the oracle that listens to the events and makes the weather requests based on the information it gets.
+
+### Setting Up
+
+Open up your terminal and do the following:
+
+- Check if your pc has Node.js installed from V16. or higher and NPM from V9. or higher.
+
+```bash
+$node --version
+
+$npm --version
+```
+
+If you don't check out [NVM](https://github.com/nvm-sh/nvm#installing-and-updating) this allows you to install the both of them in just one go.
+
+- Next create a new folder `oracle` and inside this folder run `npm init` then install the following packages
+  - [ethers.js](https://www.npmjs.com/package/ethers) package
+  - [dotenv](https://www.npmjs.com/package/dotenv) for environment variables
+  - [axios](https://www.npmjs.com/package/axios) to help us make the requests.
+
+```bash
+$mkdir oracle
+$cd oracle
+$npm init
+$npm install ethers dotenv axios
+```
+
+Next create a `.env` file, this file will contain the private key of the offChain-oracle and the address of the consumer contract we deployed on remix.
+
+```env
+PRIVAKE_KEY=""
+CONSUMER_ADDRESS=""
+```
+
+Note: Do not expose your private key. Lost some funds due to that :sob:.
+
+Next head back to the remix and copy the abi of the deployed contract, create a file `/contracts/consumer.abi.json` and paste the data in there.
+
+Lastly in the root of the folder, create a file `index.js` this is where the oracle code will be in.
+
+And that's it for the setup.
+
+### Writing on-chain oracle
