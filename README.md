@@ -59,7 +59,7 @@ Now let's define the structure of the contract. The contract will contain the fo
 - the address of the off-chain oracle (this should be immutable)
 - the fee required to make the request.
 - a constructor that helps us set the off-chain oracle address and the fee.
-- an event that triggers the off-chain oracle
+- an event that triggers the off-chain oracle and event to show that request has been completed.
 - a function the consumer contract calls to make the weather request
 - a function the off-chain oracle calls to supply us with the weather result.
 - a nonce to help in generating a different requestID
@@ -78,6 +78,7 @@ abstract contract OnChainOracle{
     uint256 private immutable fee;
 
     event newRequest(uint256 requestId, int256 lat, int256 lon);
+    event requestCompleted(uint256 requestId, string temp);
 
     constructor(address _offChainOracleAddress, uint256 _fee) {
         offChainOracleAddress = _offChainOracleAddress;
@@ -125,14 +126,15 @@ Breakdown of the function
 Now let's define the `rawCompleteRequest` function;
 
 ```solidity
-    function rawCompleteRequest(uint256 _requestId, uint256 _temp) external {
+    function rawCompleteRequest(uint256 _requestId, string memory _temp) external {
         require(msg.sender == offChainOracleAddress, "No permission");
         completeRequest(_requestId, _temp);
+        emit requestCompleted(_requestId, _temp);
     }
 
     function completeRequest(
         uint256 _requestId,
-        uint256 _temp
+        int256 _temp
     ) internal virtual;
 ```
 
@@ -152,13 +154,14 @@ The onChain-oracle contract now looks like this;
 pragma solidity ^0.8.0;
 
 abstract contract OnChainOracle {
-     uint256 private nonce;
+    uint256 private nonce;
 
     address private immutable offChainOracleAddress;
 
     uint256 private immutable fee;
 
     event newRequest(uint256 requestId, int256 lat, int256 log);
+    event requestCompleted(uint256 requestId, string temp);
 
     constructor(address _offChainOracleAddress, uint256 _fee) {
         offChainOracleAddress = _offChainOracleAddress;
@@ -179,17 +182,20 @@ abstract contract OnChainOracle {
         return requestId;
     }
 
-    function rawCompleteRequest(uint256 _requestId, uint256 _temp) external {
+    function rawCompleteRequest(
+        uint256 _requestId,
+        string memory _temp
+    ) external {
         require(msg.sender == offChainOracleAddress, "Only oracle can call");
         completeRequest(_requestId, _temp);
+        emit requestCompleted(_requestId, _temp);
     }
 
     function completeRequest(
         uint256 _requestId,
-        uint256 _temp
+        string memory _temp
     ) internal virtual;
 }
-
 ```
 
 And that's it for the oracle contract.
@@ -243,7 +249,7 @@ contract Consumer is OnChainOracle {
         int256 lat;
         int256 lon;
         bool status;
-        uint256 temp;
+        string temp;
     }
 
     mapping(uint256 => weatherRequest) weatherRequests;
@@ -276,7 +282,7 @@ Let's define the `getWeather` function
             lat: _lat,
             lon: _lon,
             status: false,
-            temp: 0
+            temp: "0"
         });
         ids[count] = requestId;
         count++;
@@ -296,7 +302,7 @@ Next the `completeRequest` function
 ```solidity
     function completeRequest(
         uint256 _requestId,
-        uint256 _temp
+        string memory _temp
     ) internal virtual override {
         require(!weatherRequests[_requestId].status, "Invalid Request ID");
         weatherRequests[_requestId].temp = _temp;
@@ -334,7 +340,7 @@ pragma solidity ^0.8.0;
 import "./OnChainOracle.sol";
 
 contract Consumer is OnChainOracle {
-     uint256 public count;
+    uint256 public count;
 
     uint256 public fee;
 
@@ -342,7 +348,7 @@ contract Consumer is OnChainOracle {
         int256 lat;
         int256 lon;
         bool status;
-        uint256 temp;
+        string temp;
     }
 
     mapping(uint256 => weatherRequest) weatherRequests;
@@ -358,12 +364,13 @@ contract Consumer is OnChainOracle {
 
     function getWeather(int256 _lat, int256 _lon) external payable {
         require(msg.value >= fee, "not enough fee for request");
+        require(_lat <= 90 && _lon < 180, "Invalid location given");
         uint256 requestId = makeWeatherRequest(_lat, _lon);
         weatherRequests[requestId] = weatherRequest({
             lat: _lat,
             lon: _lon,
             status: false,
-            temp: 0
+            temp: "0"
         });
         ids[count] = requestId;
         count++;
@@ -371,7 +378,7 @@ contract Consumer is OnChainOracle {
 
     function completeRequest(
         uint256 _requestId,
-        uint256 _temp
+        string memory _temp
     ) internal virtual override {
         require(!weatherRequests[_requestId].status, "Invalid Request ID");
         weatherRequests[_requestId].temp = _temp;
@@ -386,12 +393,12 @@ contract Consumer is OnChainOracle {
         return weatherRequests[requestId];
     }
 }
-
 ```
 
 ### Compiling and Deploying the Consumer Contract
 
-Now let's compile and deploy the `Consumer.sol` contract. For the constructor parameter (the off-chain oracle service) use a wallet address that you have the private key.
+Now let's compile and deploy the `Consumer.sol` contract. For the constructor parameter (the off-chain oracle service) use a wallet address that you have the private key, the fee I used was 0.1 celo i.e. `100000000000000000`. So users have to pay a fee of 0.1 celo in order to make a request.
+
 ![deploying contract](assets/deploy%20contract.gif)
 
 ## Off-chain Oracle Service
@@ -440,3 +447,179 @@ Lastly in the root of the folder, create a file `index.js` this is where the ora
 And that's it for the setup.
 
 ### Writing on-chain oracle
+
+Let's open the index.js file and import all the necessary dependencies needed to run our off-chain oracle.
+
+```js
+require("dotenv").config();
+const ethers = require("ethers");
+const axios = require("axios");
+const fs = require("fs");
+const abi = require("./contracts/consumer.abi.json");
+
+const consumerAddress = process.env.CONSUMER_ADDRESS;
+const oraclePrivateKey = process.env.PRIVAKE_KEY;
+const MAX_RETRIES = 3;
+```
+
+we get the consumer contract address and the off-chain oracle private key defined in the .env file and have defined a constant called `MAX_RETRIES` providing we have issues with the api, so the off-chain can make the call 3 more tries after which it responds with an error value.
+
+Next let's create a connection to the CELO testnet, using the JSON RPC with url `https://alfajores-forno.celo-testnet.org`. Then create a walletSigner instance using the private key of the off-chain oracle address and the provider connection. Next define a const
+
+```js
+const walletSigner = new ethers.Wallet(oraclePrivateKey, provider);
+
+const contract = new ethers.Contract(consumerAddress, abi, walletSigner);
+
+```
+
+Now let's create our functions, recall the off-chain oracle has three functions,
+
+1. Listen for the `newRequest` event: Here we'll be using [ethers subscriber function](https://docs.ethers.org/v5/api/contract/contract/#Contract-on) which subscribes to event calling listener when the event occurs.
+
+2. Request data from the api (the offchain database we're querying): The api we'll be using here is the [open meteo weather forecast api](https://open-meteo.com/en/docs)
+
+3. Send the request result/data to the consumer contract.
+
+Let's configure our off-chain oracle to be able to listen for the `newRequest` events:
+
+```js
+  contract.on("newRequest", async (requestId, lat, log) => {
+    // query api
+    // send data to consumer contract.
+  });
+```
+
+Provided the oracle is running, whenever a `newRequest` event is emitted, the oracle will be able to get the data passed in via that event with this command. Inside it we can then parse the data however we want
+
+Let's define the api function `getTemperature`
+
+```js
+async function getTemperature(lat, log) {
+  console.log("Making API Call");
+  let temp = 0;
+  await axios
+    .get(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${log}&current_weather=true`
+    )
+    .then((res) => {
+      temp = res.data.current_weather.temperature;
+    })
+    .catch((err) => {
+      console.log(`ERROR: ${err.message}`);
+    });
+  return temp.toString();
+}
+```
+
+It is a simple function that uses axios to make the request, passing in the latitude and longitude to the api query, then returns the temperature of that location as a string.
+
+Next let's define the function that sends the returned value to the on-chain consumer
+
+```js
+async function sendTemperatureData(requestId, temp) {
+  console.log("Sending request response to the blockchain");
+  const txn = await contract.rawCompleteRequest(requestId, temp);
+  console.log(
+    `Request completed for ${requestId} at transaction hash https://explorer.celo.org/alfajores/tx/${txn.hash}`
+  );
+  console.log(
+    "----------------------------------------------------------------------------------------------------------------------"
+  );
+}
+```
+
+So joining everything together, we have:
+
+```js
+require("dotenv").config();
+const ethers = require("ethers");
+const axios = require("axios");
+const abi = require("./contracts/consumer.abi.json");
+
+const consumerAddress = process.env.CONSUMER_ADDRESS;
+const oraclePrivateKey = process.env.PRIVAKE_KEY;
+
+const provider = new ethers.providers.JsonRpcProvider(
+  "https://alfajores-forno.celo-testnet.org"
+);
+
+const walletSigner = new ethers.Wallet(oraclePrivateKey, provider);
+
+const contract = new ethers.Contract(consumerAddress, abi, walletSigner);
+
+const MAX_RETRIES = 3;
+
+async function getTemperature(lat, log) {
+  console.log("Making API Call");
+  let temp = 0;
+  await axios
+    .get(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${log}&current_weather=true`
+    )
+    .then((res) => {
+      temp = res.data.current_weather.temperature;
+    })
+    .catch((err) => {
+      console.log(`ERROR: ${err.message}`);
+    });
+  return temp.toString();
+}
+
+async function sendTemperatureData(requestId, temp) {
+  console.log("Sending request response to the blockchain");
+  const txn = await contract.rawCompleteRequest(requestId, temp);
+  console.log(
+    `Request completed for ${requestId} at transaction hash https://explorer.celo.org/alfajores/tx/${txn.hash}`
+  );
+  console.log(
+    "-------------------------------------------------------------------------------------"
+  );
+}
+
+async function processRequest(request) {
+  let retries = 0;
+  while (retries < MAX_RETRIES) {
+    try {
+      const temp = await getTemperature(
+        Number(request.lat),
+        Number(request.log)
+      );
+      await sendTemperatureData(request.requestId, temp);
+      return;
+    } catch (e) {
+      if (retries === MAX_RETRIES - 1) {
+        console.log("Failed to data from API");
+        await sendTemperatureData(request.requestId, "0");
+        return;
+      }
+      retries++;
+    }
+  }
+}
+
+(async () => {
+  console.log("Oracle Service Started");
+  console.log(
+    "-------------------------------------------------------------------------------------"
+  );
+  contract.on("newRequest", async (requestId, lat, log) => {
+    console.log(`New request with id ${requestId} for lat ${lat} lon ${log}`);
+    const request = { requestId, lat, log };
+    await processRequest(request);
+  });
+})();
+
+```
+
+I've added a few helper functions and consoles to help us manage the output and state of the off-chain oracle.
+
+To get your off-chain oracle running, run the `node index.js` command in the root of the directory.
+
+And Voila you have a full working oracle.
+
+### Testing Oracle
+
+Note: The start count was from 6, as I tested with deployed contract before making the video.
+
+![final oracle](assets/oracle.gif)
