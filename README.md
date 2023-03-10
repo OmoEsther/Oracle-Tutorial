@@ -7,15 +7,15 @@
   - [Introduction](#introduction)
   - [Tech Stack](#tech-stack)
   - [Prerequisites](#prerequisites)
-  - [ORACLE Development](#oracle-development)
-    - [On-chain Oracle](#on-chain-oracle)
-      - [Oracle Contract](#oracle-contract)
-      - [Consumer Contract](#consumer-contract)
+  - [Oracle Development](#oracle-development)
+    - [On-Chain Oracle](#on-chain-oracle)
+      - [Oracle Smart Contract](#oracle-smart-contract)
+      - [Consumer Smart Contract](#consumer-smart-contract)
       - [Compiling and Deploying the Consumer Contract](#compiling-and-deploying-the-consumer-contract)
-  - [Off-chain Oracle Service](#off-chain-oracle-service)
-    - [Setting Up](#setting-up)
-    - [Writing on-chain oracle](#writing-on-chain-oracle)
-    - [Testing Oracle](#testing-oracle)
+    - [Off-Chain Oracle Service](#off-chain-oracle-service)
+      - [Setting up a Local Repository](#setting-up-a-local-repository)
+      - [Writing On-Chain Oracle](#writing-on-chain-oracle)
+      - [Testing Oracle](#testing-oracle)
   - [Conclusion](#conclusion)
 
 ## Introduction
@@ -46,7 +46,7 @@ We will use the following tools and languages in this tutorial:
 - Basic knowledge of using the Remix IDE
 - Basic knowledge of JavaScript
 
-## ORACLE Development
+## Oracle Development
 
 The oracle will be made up of two parts
 
@@ -65,11 +65,11 @@ Here is a breakdown of how these two parts will combine to give us a working ora
 
 5. Now the smart contract ecosystem can use the data for whatever it needs it for.
 
-### On-chain Oracle
+### On-Chain Oracle
 
 In this section we're going to be writing two smart contracts, the first one being the oracle smart contract itself, and the second being the consumer smart contract from which we'll make our requests, to test our oracle smart contract.
 
-#### Oracle Contract
+#### Oracle Smart Contract
 
 To get started, hop on to Remix and create a file `OnChainOracle.sol` and open it.
 
@@ -217,7 +217,7 @@ abstract contract OnChainOracle {
 }
 ```
 
-#### Consumer Contract
+#### Consumer Smart Contract
 
 Now let's write our consumer contract, which allows us to test our on-chain oracle contract. We're still in Remix, so create a new file `Consumer.sol`.
 
@@ -418,11 +418,11 @@ Now let's compile and deploy the `Consumer.sol` contract. For the constructor pa
 
 ![deploying contract](assets/deploy%20contract.gif)
 
-## Off-chain Oracle Service
+### Off-Chain Oracle Service
 
 In this section, we're going to create the JavaScript component of the oracle that listens to the events and makes the weather requests based on the information it gets.
 
-### Setting Up
+#### Setting up a Local Repository
 
 Open up your terminal and do the following:
 
@@ -465,7 +465,7 @@ Lastly in the root of the folder, create a file `index.js` this is where the ora
 
 And that's it for the setup.
 
-### Writing on-chain oracle
+#### Writing On-Chain Oracle
 
 Let's open the `index.js` file and import all the necessary dependencies needed to run our off-chain oracle.
 
@@ -637,7 +637,7 @@ To get your off-chain oracle running, run the `node index.js` command in the roo
 
 And Voila you have a full working oracle.
 
-### Testing Oracle
+#### Testing Oracle
 
 >**_Note_**: The start count was from 6, as I tested with the deployed contract before making the video.
 
