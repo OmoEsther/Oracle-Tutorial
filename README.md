@@ -1,4 +1,21 @@
-# Oracle-Tutorial
+# Oracle Tutorial
+
+
+## Table of Content
+- [Oracle Tutorial](#oracle-tutorial)
+  - [Table of Content](#table-of-content)
+  - [Introduction](#introduction)
+  - [Tech Stack](#tech-stack)
+  - [Prerequisites](#prerequisites)
+  - [ORACLE Development](#oracle-development)
+  - [On-chain Oracle](#on-chain-oracle)
+    - [Oracle Contract](#oracle-contract)
+    - [Consumer Contract](#consumer-contract)
+    - [Compiling and Deploying the Consumer Contract](#compiling-and-deploying-the-consumer-contract)
+  - [Off-chain Oracle Service](#off-chain-oracle-service)
+    - [Setting Up](#setting-up)
+    - [Writing on-chain oracle](#writing-on-chain-oracle)
+    - [Testing Oracle](#testing-oracle)
 
 ## Introduction
 
