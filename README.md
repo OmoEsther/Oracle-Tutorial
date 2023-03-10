@@ -1,5 +1,4 @@
-# Oracle Tutorial
-
+# How To Build a Weather DApp Using Oracle
 
 ## Table of Content
 - [Oracle Tutorial](#oracle-tutorial)
@@ -41,7 +40,7 @@ We will use the following tools and languages in this tutorial:
 5. [Solidity](https://soliditylang.org/)
 
 ## Prerequisites
-
+To have a better understanding of this tutorial, you should:
 - Basic knowledge of programming with Solidity
 - Basic knowledge of using the Remix IDE
 - Basic knowledge of JavaScript
@@ -61,7 +60,7 @@ Here is a breakdown of how these two parts will combine to give us a working ora
 
 3. The off-chain oracle then interacts with the respective API service or data to receive the result.
 
-4. After that the off-chain oracle transacts with the on-chain oracle contract to update data for the job.
+4. After that, the off-chain oracle transacts with the on-chain oracle contract to update data for the job.
 
 5. Now the smart contract ecosystem can use the data for whatever it needs it for.
 
@@ -71,11 +70,11 @@ In this section we're going to be writing two smart contracts, the first one bei
 
 #### Oracle Smart Contract
 
-To get started, hop on to Remix and create a file `OnChainOracle.sol` and open it.
+To get started, hop on to [Remix]((https://remix.ethereum.org/)) and create a file `OnChainOracle.sol` and open it.
 
 Now let's define the structure of the contract. The contract will contain the following:
 
-- The `address` of the off-chain oracle (this should be **immutable**)
+- The `address` of the off-chain oracle (this should be **immutable**).
 - The `fee` required to make the request.
 - A constructor that helps us set the off-chain oracle `address` and the `fee`.
 - An event that triggers the off-chain oracle and another event to show that the request has been completed.
@@ -240,7 +239,7 @@ import "./OnChainOracle.sol";
 contract Consumer is OnChainOracle { }
 ```
 
-Okay!!!. Let's define the contract's structure: The contract will contain the following:
+Okay!!!. Let's define the contract's structure. The contract will contain the following:
 
 - A counter to keep track of the number of requests
 - The fee required to make the request
@@ -308,11 +307,11 @@ Let's define the `getWeather()` function
 
 Breakdown of the `getWeather()` function:
 
-- The function takes in the `latitude` and `longitude` from the user
-- Next, it checks if the user has sent enough tokens to pay the fee to make the request
+- The function takes in the `latitude` and `longitude` from the user.
+- Next, it checks if the user has sent enough tokens to pay the fee to make the request.
 - Then it makes the requests and creates a new `weatherRequest` object using the returned `requestId` as the key.
-- It also stores a mapping of the counter to the `requestId`, for ease of retrievable as we can't memorize the generated `requestId` from the on-chain oracle
-- Then it increments the counter
+- It also stores a mapping of the counter to the `requestId`, for ease of retrievable as we can't memorize the generated `requestId` from the on-chain oracle.
+- Then it increments the counter.
 
 Next is the `completeRequest()` function:
 
@@ -414,7 +413,7 @@ contract Consumer is OnChainOracle {
 
 #### Compiling and Deploying the Consumer Contract
 
-Now let's compile and deploy the `Consumer.sol` contract. For the constructor parameter (the off-chain oracle service) use a wallet address that you have the private key, the fee I used was 0.1 CELO i.e. `100000000000000000`. So users have to pay a fee of 0.1 CELO to make a request.
+Now let's compile and deploy the `Consumer.sol` contract. For the constructor parameter (the off-chain oracle service) use a wallet address that you have the private key, the fee I used was 0.1 CELO i.e. `100000000000000000`. So users have to pay a fee of 0.1 CELO to make a request. This [article](https://docs.celo.org/developer/deploy/remix) will guide you on how to deploy on remix.
 
 ![deploying contract](assets/deploy%20contract.gif)
 
@@ -459,7 +458,7 @@ CONSUMER_ADDRESS=""
 
 >**_Note_**: Do not expose your private key as it can result in the permanent loss of your funds :sob: .
 
-Next head back to the Remix and copy the ABI of the deployed contract, create a file `/contracts/consumer.abi.json`, and paste the ABI in there.
+Next head back to the Remix and copy the Application Binary Interface(ABI) of the deployed contract, create a file `/contracts/consumer.abi.json`, and paste the ABI in there.
 
 Lastly in the root of the folder, create a file `index.js` this is where the oracle code will be in.
 
@@ -647,7 +646,7 @@ And Voila you have a full working oracle.
 
 In this tutorial, you have learned about how to use oracles to query off-chain data and pass it into a consumer smart contract hosted on the blockchain. 
 
-Do note that this is a simple example of much more complex oracle designs systems in use now as they include many nodes and consensus protocols to ensure that the oracle data is decentralized.
+Do note that this is a simple example of much more complex oracle design systems in use now as they include many nodes and consensus protocols to ensure that the oracle data is decentralized.
 
 To see all on-chain Oracles currently present on CELO follow [here](https://docs.celo.org/protocol/oracle).
 
