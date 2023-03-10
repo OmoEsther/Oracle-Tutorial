@@ -1,0 +1,165 @@
+[
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_offChainOracle",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_fee",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "requestId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "int256",
+                "name": "lat",
+                "type": "int256"
+            },
+            {
+                "indexed": false,
+                "internalType": "int256",
+                "name": "log",
+                "type": "int256"
+            }
+        ],
+        "name": "newRequest",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "requestId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "temp",
+                "type": "string"
+            }
+        ],
+        "name": "requestCompleted",
+        "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "count",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "fee",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "int256",
+                "name": "_lat",
+                "type": "int256"
+            },
+            {
+                "internalType": "int256",
+                "name": "_lon",
+                "type": "int256"
+            }
+        ],
+        "name": "getWeather",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_requestId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "string",
+                "name": "_temp",
+                "type": "string"
+            }
+        ],
+        "name": "rawCompleteRequest",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_countId",
+                "type": "uint256"
+            }
+        ],
+        "name": "viewRequest",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "int256",
+                        "name": "lat",
+                        "type": "int256"
+                    },
+                    {
+                        "internalType": "int256",
+                        "name": "lon",
+                        "type": "int256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "status",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "temp",
+                        "type": "string"
+                    }
+                ],
+                "internalType": "struct Consumer.weatherRequest",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
