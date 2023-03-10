@@ -85,11 +85,11 @@ abstract contract OnChainOracle{
         fee = _fee;
     }
 
-    //function makeWeatherRequest(){}
+    // makeWeatherRequest
 
-    //function rawCompleteRequest(){}
+    // rawCompleteRequest
 
-    //function completeRequest(){}
+    // completeRequest
 }
 
 ```
@@ -263,11 +263,11 @@ contract Consumer is OnChainOracle {
         fee = _fee;
     }
 
-    // function getWeather()  {}
+    // getWeather
 
-    // function completeRequest() {}
+    // completeRequest
 
-    // function viewRequest()  {}
+    // viewRequest
 }
 
 ```
